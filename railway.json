@@ -1,11 +1,114 @@
-{
-  "$schema": "https://railway.app/railway.schema.json",
-  "build": {
-    "builder": "NIXPACKS"
-  },
-  "deploy": {
-    "startCommand": "python bot.py",
-    "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
-  }
-}
+import os
+import random
+import json
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
+from telegram.ext.callbackcontext import CallbackContext
+
+# Токен бота
+BOT_TOKEN = "7506456129:AAEkpmkJvuT7MMuozrz5yFgjiEI26t3TnVE"
+
+# ID владельца бота
+OWNER_ID = 5611827423  # Замените на ваш ID
+
+# Файл для хранения видео
+VIDEO_FILE = 'videos.json'
+
+# Функция для загрузки видео из JSON-файла
+def load_videos():
+    if not os.path.exists(VIDEO_FILE):
+        return []
+    with open(VIDEO_FILE, 'r') as file:
+        return json.load(file)
+
+# Функция для сохранения видео в JSON-файл
+def save_videos(videos):
+    with open(VIDEO_FILE, 'w') as file:
+        json.dump(videos, file)
+
+# Загружаем видео при запуске
+videos = load_videos()
+
+# Обработчик команды /start
+def start(update: Update, context: CallbackContext):
+    if not videos:
+        context.bot.send_message(update.effective_chat.id, "Видео пока не добавлены.")
+        return
+
+    # Отправляет первое случайное видео
+    random_video = random.choice(videos)
+    context.bot.send_video(update.effective_chat.id, open(random_video, 'rb'))
+
+    # Отправляет кнопку "Далее"
+    context.bot.send_message(update.effective_chat.id, "Далее", reply_markup=next_button())
+
+# Обработчик нажатия на кнопку "Далее"
+def next_video(update: Update, context: CallbackContext):
+    if not videos:
+        context.bot.send_message(update.effective_chat.id, "Видео пока не добавлены.")
+        return
+
+    # Отправляет следующее случайное видео
+    random_video = random.choice(videos)
+    context.bot.send_video(update.effective_chat.id, open(random_video, 'rb'))
+
+# Обработчик команды /add_video (для владельца)
+def add_video(update: Update, context: CallbackContext):
+    if update.effective_user.id != OWNER_ID:
+        return
+
+    # Проверяет, загружено ли видео
+    if not context.args:
+        update.message.reply_text("Неверный формат команды. Usage: /add_video <путь_к_файлу>")
+        return
+
+    video_path = context.args[0]
+    if not os.path.isfile(video_path):
+        update.message.reply_text("Указанный файл не существует.")
+        return
+
+    videos.append(video_path)
+    save_videos(videos)
+    update.message.reply_text("Видео успешно добавлено.")
+
+# Обработчик команды /delete_video (для владельца)
+def delete_video(update: Update, context: CallbackContext):
+    if update.effective_user.id != OWNER_ID:
+        return
+
+    if not context.args:
+        update.message.reply_text("Неверный формат команды. Usage: /delete_video <идентификатор_видео>")
+        return
+
+    video_id = int(context.args[0])
+
+    if video_id < 0 or video_id >= len(videos):
+        update.message.reply_text("Видео с указанным идентификатором не найдено.")
+        return
+
+    videos.pop(video_id)
+    save_videos(videos)
+    update.message.reply_text("Видео успешно удалено.")
+
+# Функция создания кнопки "Далее"
+def next_button():
+    keyboard = [[InlineKeyboardButton("Далее", callback_data="next_video")]]
+    return InlineKeyboardMarkup(keyboard)
+
+# Основная функция
+def main():
+    updater = Updater(BOT_TOKEN)
+
+    dp = updater.dispatcher
+
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CallbackQueryHandler(next_video, pattern="next_video"))
+
+    dp.add_handler(CommandHandler("add_video", add_video))
+    dp.add_handler(CommandHandler("delete_video", delete_video))
+
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == "__main__":
+    main()
