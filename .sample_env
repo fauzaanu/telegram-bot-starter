@@ -1,1 +1,9 @@
-TOKEN=API_KEY_FROM_BOT_FATHER
+TELEGRAM_BOT_TOKEN=API_KEY_FROM_BOT_FATHER
+DEV_MODE=False
+WEBHOOK_URL=enter_railway_url_here.com
+PORT=8443
+DB_HOST=postgres_host
+DB_NAME=postegres_db_name
+DB_PORT=postgres_port
+DB_USER=postgres_user
+DB_PASSWORD=postgres_password

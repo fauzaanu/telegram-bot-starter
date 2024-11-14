@@ -1,16 +1,16 @@
-[tool.poetry]
-name = "telegram-bot-starter"
+[project]
+name = "diet"
 version = "0.1.0"
-description = ""
-authors = ["fauzaanu <fauzaangasim@gmail.com>"]
+description = "Add your description here"
 readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "psycopg[binary]>=3.2.3",
+    "python-dotenv>=1.0.1",
+    "python-telegram-bot[job-queue,webhooks]>=21.6",
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-python-telegram-bot = "^20.7"
-python-dotenv = "^1.0.1"
-
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.uv]
+dev-dependencies = [
+    "ruff>=0.7.0",
+]

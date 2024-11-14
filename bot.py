@@ -20,7 +20,7 @@ import os
 
 from dotenv import load_dotenv
 from telegram import ForceReply, Update
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram.ext import Application, ContextTypes
 
 # Enable logging
 logging.basicConfig(
@@ -53,23 +53,30 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(update.message.text)
 
 
-def main() -> None:
-    """Start the bot."""
-    load_dotenv()
-
-    # Create the Application and pass it your bot's token.
-    application = Application.builder().token(os.environ["TOKEN"]).build()
-
-    # on different commands - answer in Telegram
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("help", help_command))
-
-    # on non command i.e message - echo the message on Telegram
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
-
-    # Run the bot until the user presses Ctrl-C
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
-
-
 if __name__ == "__main__":
-    main()
+    load_dotenv()
+    token = os.environ["TELEGRAM_BOT_TOKEN"]
+    dev_mode = os.environ.get("DEV_MODE", "False").lower() == "True"
+
+    application = Application.builder().token(token).build()
+
+    if dev_mode:
+        # Webhook settings
+        webhook_url = os.environ.get("WEBHOOK_URL")
+        port = int(os.environ.get("PORT", 8443))
+
+        # Set webhook
+        application.bot.set_webhook(
+            url=f"{webhook_url}/{token}",
+            drop_pending_updates=True
+        )
+
+        application.run_webhook(
+            listen="0.0.0.0",
+            port=port,
+            url_path=token,
+            webhook_url=f"{webhook_url}/{token}"
+        )
+    else:
+        application.run_polling()
+
